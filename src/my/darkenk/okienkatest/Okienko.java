@@ -40,10 +40,7 @@ import android.widget.RelativeLayout;
 public class Okienko extends RelativeLayout {
 
     ActivityViewWrapper mActivityViewWrapper;
-    View mHeader;
     ViewGroup mWindow;
-    View mRightCorner;
-    View mLeftCorner;
 
     /**
      *
@@ -59,38 +56,6 @@ public class Okienko extends RelativeLayout {
         mActivityViewWrapper = new ActivityViewWrapper(context);
         ((ViewGroup)mWindow.findViewById(R.id.activity)).addView(mActivityViewWrapper.getActivityView());
 
-        mHeader = mWindow.findViewById(R.id.header);
-        mHeader.setOnTouchListener(new TouchMoveListener() {
-
-            @Override
-            protected void onMove(float dx, float dy) {
-                mWindow.setX(mWindow.getX() + dx);
-                mWindow.setY(mWindow.getY() + dy);
-            }
-        });
-        mRightCorner = mWindow.findViewById(R.id.right_corner);
-        mRightCorner.setOnTouchListener(new TouchMoveListener() {
-
-            @Override
-            protected void onMove(float dx, float dy) {
-                ViewGroup.LayoutParams lp = mWindow.getLayoutParams();
-                lp.width += dx;
-                lp.height += dy;
-                mWindow.setLayoutParams(lp);
-            }
-        });
-        mLeftCorner = mWindow.findViewById(R.id.left_corner);
-        mLeftCorner.setOnTouchListener(new TouchMoveListener() {
-
-            @Override
-            protected void onMove(float dx, float dy) {
-                mWindow.setX(mWindow.getX() + dx);
-                ViewGroup.LayoutParams lp = mWindow.getLayoutParams();
-                lp.width -= dx;
-                lp.height += dy;
-                mWindow.setLayoutParams(lp);
-            }
-        });
         this.post(new Runnable() {
             @Override
             public void run() {
@@ -98,27 +63,4 @@ public class Okienko extends RelativeLayout {
             }
         });
     }
-
-    private abstract class TouchMoveListener implements OnTouchListener {
-
-        private float mLastX, mLastY;
-
-        @Override
-        public boolean onTouch(View v, MotionEvent e) {
-            if (e.getAction() == MotionEvent.ACTION_DOWN) {
-                mLastX = e.getRawX();
-                mLastY = e.getRawY();
-            } else if (e.getAction() == MotionEvent.ACTION_MOVE) {
-                onMove(e.getRawX() - mLastX, e.getRawY() - mLastY);
-                mLastX = e.getRawX();
-                mLastY = e.getRawY();
-            } else if (e.getAction() == MotionEvent.ACTION_UP) {
-                mLastX = mLastY = 0f;
-            }
-            return true;
-        }
-
-        protected abstract void onMove(float dx, float dy);
-    }
-
 }
