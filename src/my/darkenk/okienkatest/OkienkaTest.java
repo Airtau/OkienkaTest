@@ -30,26 +30,38 @@
 package my.darkenk.okienkatest;
 
 import android.app.Activity;
+import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.ResolveInfo;
+import android.media.MediaRouter;
+import android.media.MediaRouter.RouteInfo;
 import android.os.Bundle;
+import android.util.Log;
+import android.view.Display;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 
 import java.util.List;
 
 public class OkienkaTest extends Activity {
 
-    ActivityViewWrapper mActivityViewWrapper;
-    ViewGroup mDesktop;
+    private final String TAG = "OkienkaTest";
+    private ActivityViewWrapper mActivityViewWrapper;
+    private ViewGroup mDesktop;
+    private MediaRouter mMediaRouter;
+    private SamplePresentation mPresentation;
+    private int mCount = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.okienko);
         mDesktop = (ViewGroup)findViewById(R.id.activity_view);
+        mMediaRouter = (MediaRouter)getSystemService(Context.MEDIA_ROUTER_SERVICE);
     }
 
     @Override
@@ -67,8 +79,101 @@ public class OkienkaTest extends Activity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        new Okienko(OkienkaTest.this, mDesktop, item.getIntent());
+        if (mCount == 0) {
+            Log.v(TAG, "Primary display: " + item.getIntent());
+            new Okienko(OkienkaTest.this, mDesktop, item.getIntent());
+        } else if (mCount == 1) {
+            Log.v(TAG, "Secondary display: " + item.getIntent());
+            mPresentation.setApp(item.getIntent());
+        } else {
+            Log.v(TAG, "Discard: " + item.getIntent());
+        }
+        mCount++;
         return true;
     }
 
+    private final MediaRouter.SimpleCallback mMediaRouterCallback =
+            new MediaRouter.SimpleCallback() {
+                @Override
+                public void onRouteSelected(MediaRouter router, int type, RouteInfo info) {
+                    updatePresentation();
+                }
+
+                @Override
+                public void onRouteUnselected(MediaRouter router, int type, RouteInfo info) {
+                    updatePresentation();
+                }
+
+                @Override
+                public void onRoutePresentationDisplayChanged(MediaRouter router, RouteInfo info) {
+                    updatePresentation();
+                }
+            };
+
+    private final DialogInterface.OnDismissListener mOnDismissListener =
+            new DialogInterface.OnDismissListener() {
+                @Override
+                public void onDismiss(DialogInterface dialog) {
+                    if (dialog == mPresentation) {
+                        mPresentation = null;
+                    }
+                }
+            };
+
+    private void updatePresentation() {
+        RouteInfo selectedRoute = mMediaRouter.getSelectedRoute(
+                MediaRouter.ROUTE_TYPE_LIVE_VIDEO);
+
+        Display selectedDisplay = null;
+        if (selectedRoute != null) {
+            selectedDisplay = selectedRoute.getPresentationDisplay();
+        }
+
+        if (mPresentation != null && mPresentation.getDisplay() != selectedDisplay) {
+            mPresentation.dismiss();
+            mPresentation = null;
+        }
+
+        if (mPresentation == null && selectedDisplay != null) {
+
+            // Initialise a new Presentation for the Display
+            mPresentation = new SamplePresentation(this, selectedDisplay);
+            mPresentation.setOnDismissListener(mOnDismissListener);
+
+            // Try to show the presentation, this might fail if the display has
+            // gone away in the mean time
+            try {
+                mPresentation.show();
+            } catch (WindowManager.InvalidDisplayException ex) {
+                // Couldn't show presentation - display was already removed
+                mPresentation = null;
+            }
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Register a callback for all events related to live video devices
+        mMediaRouter.addCallback(MediaRouter.ROUTE_TYPE_LIVE_VIDEO, mMediaRouterCallback);
+        // Update the displays based on the currently active routes
+        updatePresentation();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        // Stop listening for changes to media routes.
+        mMediaRouter.removeCallback(mMediaRouterCallback);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        // Dismiss the presentation when the activity is not visible.
+        if (mPresentation != null) {
+            mPresentation.dismiss();
+            mPresentation = null;
+        }
+    }
 }
