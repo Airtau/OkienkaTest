@@ -35,6 +35,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.ResolveInfo;
+import android.hardware.display.DisplayManager;
 import android.media.MediaRouter;
 import android.media.MediaRouter.RouteInfo;
 import android.os.Bundle;
@@ -54,10 +55,12 @@ public class OkienkaTest extends Activity {
     private ActivityViewWrapper mActivityViewWrapper;
     private ViewGroup mDesktop;
     private MediaRouter mMediaRouter;
+    private DisplayManager mDisplayManager;
     private SamplePresentation mPresentation;
     private Okienko mPrimaryApp;
     private Okienko mSecondaryApp;
     private int mCount = 0;
+    private int mTotalDisplays = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,6 +68,15 @@ public class OkienkaTest extends Activity {
         setContentView(R.layout.okienko);
         mDesktop = (ViewGroup)findViewById(R.id.activity_view);
         mMediaRouter = (MediaRouter)getSystemService(Context.MEDIA_ROUTER_SERVICE);
+        mDisplayManager = (DisplayManager)getSystemService(Context.DISPLAY_SERVICE);
+        // List of the available displays
+        while (true) {
+            Display display = mDisplayManager.getDisplay(mTotalDisplays);
+            if (display == null)
+                break;
+            mTotalDisplays++;
+            Log.v(TAG, "Found display " + display);
+        }
     }
 
     @Override
@@ -85,7 +97,7 @@ public class OkienkaTest extends Activity {
         if (mCount == 0) {
             Log.v(TAG, "Primary display: " + item.getIntent());
             mPrimaryApp = new Okienko(OkienkaTest.this, mDesktop, item.getIntent());
-        } else if (mCount == 1) {
+        } else if ((mCount == 1) && (mTotalDisplays >= 2)) {
             Log.v(TAG, "Secondary display: " + item.getIntent());
             mSecondaryApp = mPresentation.setApp(item.getIntent());
         } else {
