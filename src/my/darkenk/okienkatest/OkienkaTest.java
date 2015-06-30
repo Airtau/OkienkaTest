@@ -61,6 +61,7 @@ public class OkienkaTest extends Activity {
     private Okienko mSecondaryApp;
     private int mCount = 0;
     private int mTotalDisplays = 0;
+    private float mScaleX, mScaleY;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -100,6 +101,11 @@ public class OkienkaTest extends Activity {
         } else if ((mCount == 1) && (mTotalDisplays >= 2)) {
             Log.v(TAG, "Secondary display: " + item.getIntent());
             mSecondaryApp = mPresentation.setApp(item.getIntent());
+            // Compute secondary input device scaling factor
+            mScaleX = (float)mDisplayManager.getDisplay(1).getWidth() /
+                mDisplayManager.getDisplay(0).getWidth();
+            mScaleY = (float)mDisplayManager.getDisplay(1).getHeight() /
+                mDisplayManager.getDisplay(0).getHeight();
         } else {
             Log.v(TAG, "Discard: " + item.getIntent());
         }
@@ -110,6 +116,11 @@ public class OkienkaTest extends Activity {
     @Override
     public boolean dispatchTouchEvent(MotionEvent event) {
         if ((mSecondaryApp != null) && (!event.getDevice().getName().equals("ft5x06"))) {
+            // Scale resolution from primary to secondary display
+            float x, y;
+            x = event.getX() * mScaleX;
+            y = event.getY() * mScaleY;
+            event.setLocation(x, y);
             return mSecondaryApp.getView().dispatchTouchEvent(event);
         }
         return super.dispatchTouchEvent(event);
