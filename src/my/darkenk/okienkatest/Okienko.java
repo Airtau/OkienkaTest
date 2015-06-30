@@ -63,4 +63,8 @@ public class Okienko extends RelativeLayout {
             }
         });
     }
+
+    public View getView() {
+        return mActivityViewWrapper.getActivityView();
+    }
 }

@@ -62,7 +62,7 @@ public class SamplePresentation extends Presentation {
      *
      * @param intent Application start Intent
      */
-    public void setApp(Intent intent) {
-        new Okienko(mContext, mDesktop, intent);
+    public Okienko setApp(Intent intent) {
+        return new Okienko(mContext, mDesktop, intent);
     }
 }

@@ -42,6 +42,7 @@ import android.util.Log;
 import android.view.Display;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 
@@ -54,6 +55,8 @@ public class OkienkaTest extends Activity {
     private ViewGroup mDesktop;
     private MediaRouter mMediaRouter;
     private SamplePresentation mPresentation;
+    private Okienko mPrimaryApp;
+    private Okienko mSecondaryApp;
     private int mCount = 0;
 
     @Override
@@ -81,15 +84,23 @@ public class OkienkaTest extends Activity {
     public boolean onOptionsItemSelected(MenuItem item) {
         if (mCount == 0) {
             Log.v(TAG, "Primary display: " + item.getIntent());
-            new Okienko(OkienkaTest.this, mDesktop, item.getIntent());
+            mPrimaryApp = new Okienko(OkienkaTest.this, mDesktop, item.getIntent());
         } else if (mCount == 1) {
             Log.v(TAG, "Secondary display: " + item.getIntent());
-            mPresentation.setApp(item.getIntent());
+            mSecondaryApp = mPresentation.setApp(item.getIntent());
         } else {
             Log.v(TAG, "Discard: " + item.getIntent());
         }
         mCount++;
         return true;
+    }
+
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent event) {
+        if ((mSecondaryApp != null) && (!event.getDevice().getName().equals("ft5x06"))) {
+            return mSecondaryApp.getView().dispatchTouchEvent(event);
+        }
+        return super.dispatchTouchEvent(event);
     }
 
     private final MediaRouter.SimpleCallback mMediaRouterCallback =
