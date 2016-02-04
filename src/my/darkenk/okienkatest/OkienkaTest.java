@@ -39,6 +39,7 @@ import android.hardware.display.DisplayManager;
 import android.media.MediaRouter;
 import android.media.MediaRouter.RouteInfo;
 import android.os.Bundle;
+import android.os.SystemProperties;
 import android.util.Log;
 import android.view.Display;
 import android.view.Menu;
@@ -62,6 +63,7 @@ public class OkienkaTest extends Activity {
     private int mCount = 0;
     private int mTotalDisplays = 0;
     private float mScaleX, mScaleY;
+    private String mSecondaryTouch;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -79,6 +81,7 @@ public class OkienkaTest extends Activity {
             mTotalDisplays++;
             Log.v(TAG, "Found display " + display);
         }
+        mSecondaryTouch = SystemProperties.get("persist.secondary.touch", "none");
     }
 
     @Override
@@ -116,13 +119,15 @@ public class OkienkaTest extends Activity {
 
     @Override
     public boolean dispatchTouchEvent(MotionEvent event) {
-        if ((mSecondaryApp != null) && (!event.getDevice().getName().equals("ft5x06"))) {
-            // Scale resolution from primary to secondary display
-            float x, y;
-            x = event.getX() * mScaleX;
-            y = event.getY() * mScaleY;
-            event.setLocation(x, y);
-            return mSecondaryApp.getView().dispatchTouchEvent(event);
+        if (!mSecondaryTouch.equals("none")) {
+            if ((mSecondaryApp != null) && (event.getDevice().getName().equals(mSecondaryTouch))) {
+                // Scale resolution from primary to secondary display
+                float x, y;
+                x = event.getX() * mScaleX;
+                y = event.getY() * mScaleY;
+                event.setLocation(x, y);
+                return mSecondaryApp.getView().dispatchTouchEvent(event);
+            }
         }
         return super.dispatchTouchEvent(event);
     }
