@@ -66,6 +66,7 @@ public class OkienkaTest extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setTitle(R.string.app_long_name);
         setContentView(R.layout.okienko);
         mDesktop = (ViewGroup)findViewById(R.id.activity_view);
         mMediaRouter = (MediaRouter)getSystemService(Context.MEDIA_ROUTER_SERVICE);
